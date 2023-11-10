@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://schema.aireadi.org/files/participants.json",
-  "title": "README",
+  "title": "Participants",
   "description": "Additional text here",
   "type": "array",
   "items": {
@@ -20,7 +20,7 @@
       "age": {
         "type": "number",
         "description": "Numeric value in years (float or integer value)",
-        "exclusiveMinimum": 0
+        "exclusiveMinimum": 0.5
       },
       "sex": {
         "type": "string",
