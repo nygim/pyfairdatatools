@@ -234,10 +234,9 @@ class DicomEntry:
 
 class DicomSummary:
     def __init__(
-        self, domain, modality, patientid, laterality, protocol
+        self, domain, patientid, laterality, protocol
     ):  # sopinstance, matchingcfpifsopinstance
         self.domain = domain  # DICOM
-        self.modality = modality  # CFP, IR, OCT B scan, ...
         self.patientid = patientid  # patient id
         self.laterality = laterality  # laterality
         self.protocol = protocol  # belongs to which one in AIREADI checklist
@@ -423,7 +422,7 @@ def extract_dicom_summary(file):
     numberoffiles = dicomentry.numberoffiles
     protocol = find_rule(file)
 
-    output = DicomSummary(domain, modality,patientid, laterality, protocol)
+    output = DicomSummary(domain, patientid, laterality, protocol)
     #output = DicomSummaryDetail(domain, modality, patientid, laterality, description,sopinstanceuid,referencedsopinstance)
     return output
 
