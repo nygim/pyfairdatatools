@@ -1,6 +1,8 @@
 import os
-
 import pydicom
+import tempfile
+import shutil
+import zipfile
 
 
 class ClassifyingRule:
@@ -24,45 +26,45 @@ rules = [
     ),
     # eidon
     ClassifyingRule(
-        "Eidom_UWF_Central_IR",
+        "Eidon_UWF_Central_IR",
         conditions=[
             lambda entry: "0-infrared" in entry.filename.lower()
-            and "Eidon FA" == entry.device
+            and "Eidon" in entry.device
         ],
     ),
     ClassifyingRule(
-        "Eidom_UWF_Central_FAF",
+        "Eidon_UWF_Central_FAF",
         conditions=[
-            lambda entry: "0-af" in entry.filename.lower()
-            and "Eidon FA" == entry.device
+            lambda entry: "0-af-" in entry.filename.lower()
+            and "Eidon" in entry.device
         ],
     ),
     ClassifyingRule(
-        "Eidom_UWF_Central_CFP",
+        "Eidon_UWF_Central_CFP",
         conditions=[
             lambda entry: "0-visible" in entry.filename.lower()
-            and "Eidon FA" == entry.device
+            and "Eidon" in entry.device
         ],
     ),
     ClassifyingRule(
-        "Eidom_UWF_Nasal_CFP",
+        "Eidon_UWF_Nasal_CFP",
         conditions=[
             lambda entry: "3-visible" in entry.filename.lower()
-            and "Eidon FA" == entry.device
+            and "Eidon" in entry.device
         ],
     ),
     ClassifyingRule(
-        "Eidom_UWF_Temporal_CFP",
+        "Eidon_UWF_Temporal_CFP",
         conditions=[
             lambda entry: "4-visible" in entry.filename.lower()
-            and "Eidon FA" == entry.device
+            and "Eidon" in entry.device
         ],
     ),
     ClassifyingRule(
-        "Eidom_UWF_Mosaic_CFP",
+        "Eidon_UWF_Mosaic_CFP",
         conditions=[
             lambda entry: "11-visible" in entry.filename.lower()
-            and "Eidon FA" == entry.device
+            and "Eidon" in entry.device
         ],
     ),
     # maestro
@@ -70,301 +72,70 @@ rules = [
         "Maestro2_3D_Wide_OCT",
         conditions=[
             lambda entry: "3DOCT-1Maestro2" == entry.device
-            and "IMAGENET6V2_1" == entry.implementationversion
             and "1.2.840.10008.5.1.4.1.1.77.1.5.4" == entry.sopclassuid
-            and "0.07086614173" == str(entry.slicethickness)
+            and str(entry.slicethickness).startswith("0.07")
         ],
     ),
     ClassifyingRule(
         "Maestro2_3D_Macula_OCT",
         conditions=[
             lambda entry: "3DOCT-1Maestro2" == entry.device
-            and "IMAGENET6V2_1" == entry.implementationversion
             and "1.2.840.10008.5.1.4.1.1.77.1.5.4" == entry.sopclassuid
-            and "0.04724409449" == str(entry.slicethickness)
+            and str(entry.slicethickness).startswith("0.04")
         ],
     ),
+
     ClassifyingRule(
-        "Maestro2_OCT_reference_CFP",
-        conditions=[
-            lambda entry: "3DOCT-1Maestro2" == entry.device
-            and "IMAGENET6V2_1" == entry.implementationversion
-            and "1.2.840.10008.5.1.4.1.1.77.1.5.1" == entry.sopclassuid
-        ],
-    ),
-    ClassifyingRule(
-        "Maestro2_OCTA_reference_Bscan",
+        "Maestro2_Mac_6x6-360x360_OCTA",
         conditions=[
             lambda entry: entry.device == "3DOCT-1Maestro2"
             and "fo-dicom 4.0.8" == entry.implementationversion
-            and entry.filename.startswith("2.16.840.1.114517.10.1.1.4.")
+            and str(entry.slicethickness).startswith("0.01")
+            and "1.2.840.10008.5.1.4.1.1.77.1.5.4" == entry.sopclassuid
             and entry.filename.endswith(".1.1.dcm")
         ],
     ),
-    ClassifyingRule(
-        "Maestro2_OCTA_reference_CFP",
-        conditions=[
-            lambda entry: entry.device == "3DOCT-1Maestro2"
-            and "fo-dicom 4.0.8" == entry.implementationversion
-            and entry.filename.startswith("2.16.840.1.114517.10.1.1.4.")
-            and entry.filename.endswith(".2.1.dcm")
-        ],
-    ),
-    ClassifyingRule(
-        "Maestro2_OCTA_Segmentation",
-        conditions=[
-            lambda entry: entry.device == "3DOCT-1Maestro2"
-            and "fo-dicom 4.0.8" == entry.implementationversion
-            and entry.filename.startswith("2.16.840.1.114517.10.1.1.4.")
-            and entry.filename.endswith(".4.1.dcm")
-        ],
-    ),
-    ClassifyingRule(
-        "Maestro2_OCTA_volumeanalysis_unprocessed",
-        conditions=[
-            lambda entry: entry.device == "3DOCT-1Maestro2"
-            and "fo-dicom 4.0.8" == entry.implementationversion
-            and entry.filename.startswith("2.16.840.1.114517.10.1.1.4.")
-            and entry.filename.endswith(".3.1.dcm")
-        ],
-    ),
-    ClassifyingRule(
-        "Maestro2_OCTA_volumeanalysis_for_presentation",
-        conditions=[
-            lambda entry: entry.device == "3DOCT-1Maestro2"
-            and "fo-dicom 4.0.8" == entry.implementationversion
-            and entry.filename.startswith("2.16.840.1.114517.10.1.1.4.")
-            and entry.filename.endswith(".5.1.dcm")
-        ],
-    ),
-    ClassifyingRule(
-        "Maestro2_OCTA_enface_superficial",
-        conditions=[
-            lambda entry: entry.device == "3DOCT-1Maestro2"
-            and "fo-dicom 4.0.8" == entry.implementationversion
-            and entry.filename.startswith("2.16.840.1.114517.10.1.1.4.")
-            and entry.filename.endswith(".6.3.dcm")
-        ],
-    ),
-    ClassifyingRule(
-        "Maestro2_OCTA_enface_deep",
-        conditions=[
-            lambda entry: entry.device == "3DOCT-1Maestro2"
-            and "fo-dicom 4.0.8" == entry.implementationversion
-            and entry.filename.startswith("2.16.840.1.114517.10.1.1.4.")
-            and entry.filename.endswith(".6.4.dcm")
-        ],
-    ),
-    ClassifyingRule(
-        "Maestro2_OCTA_enface_choriocapillaris",
-        conditions=[
-            lambda entry: entry.device == "3DOCT-1Maestro2"
-            and "fo-dicom 4.0.8" == entry.implementationversion
-            and entry.filename.startswith("2.16.840.1.114517.10.1.1.4.")
-            and entry.filename.endswith(".6.5.dcm")
-        ],
-    ),
-    ClassifyingRule(
-        "Maestro2_OCTA_enface_outer_retina",
-        conditions=[
-            lambda entry: entry.device == "3DOCT-1Maestro2"
-            and "fo-dicom 4.0.8" == entry.implementationversion
-            and entry.filename.startswith("2.16.840.1.114517.10.1.1.4.")
-            and entry.filename.endswith(".6.80.dcm")
-        ],
-    ),
+ 
     # triton
     ClassifyingRule(
         "Triton_3D(H)_Radial_OCT",
         conditions=[
-            lambda entry: "TP_STO_IM6_100" == entry.implementationversion
+            lambda entry: "fo-dicom 4.0.8" == entry.implementationversion
             and "1.2.840.10008.5.1.4.1.1.77.1.5.4" == entry.sopclassuid
-            and "Triton" == entry.device
+            and str(entry.slicethickness).startswith("0.03")
+            and "Triton plus" == entry.device
+
         ],
     ),
+
     ClassifyingRule(
-        "Triton_3D(H)_Radial_OCT_reference_CFP",
-        conditions=[
-            lambda entry: "TP_STO_IM6_100" == entry.implementationversion
-            and "1.2.840.10008.5.1.4.1.1.77.1.5.1" == entry.sopclassuid
-            and "Triton" == entry.device
-        ],
-    ),
-    ClassifyingRule(
-        "Triton_Macula_6*6_OCTA_reference_Bscan",
+        "Triton_Macula_6*6_OCTA",
         conditions=[
             lambda entry: entry.device == "Triton plus"
-            and str(entry.slicethickness) == "0.01875"
+            and str(entry.slicethickness).startswith("0.01")
             and "fo-dicom 4.0.8" == entry.implementationversion
-            and entry.filename.startswith("2.16.840.1.114517.10.1.1.4.")
             and entry.filename.endswith(".1.1.dcm")
         ],
     ),
+
     ClassifyingRule(
-        "Triton_Macula_6*6_OCTA_reference_CFP",
+        "Triton_Macula_12*12_OCTA",
         conditions=[
             lambda entry: entry.device == "Triton plus"
+            and str(entry.slicethickness).startswith("0.02")
             and "fo-dicom 4.0.8" == entry.implementationversion
-            and entry.filename.startswith("2.16.840.1.114517.10.1.1.4.")
-            and entry.filename.endswith(".2.1.dcm")
-        ],
-    ),
-    ClassifyingRule(
-        "Triton_Macula_6*6_OCTA_Segmentation",
-        conditions=[
-            lambda entry: entry.device == "Triton plus"
-            and str(entry.slicethickness) == "0.01875"
-            and "fo-dicom 4.0.8" == entry.implementationversion
-            and entry.filename.startswith("2.16.840.1.114517.10.1.1.4.")
-            and entry.filename.endswith(".4.1.dcm")
-        ],
-    ),
-    ClassifyingRule(
-        "Triton_Macula_6*6_OCTA_volumeanalysis_unprocessed",
-        conditions=[
-            lambda entry: entry.device == "Triton plus"
-            and str(entry.slicethickness) == "0.01875"
-            and "fo-dicom 4.0.8" == entry.implementationversion
-            and entry.filename.startswith("2.16.840.1.114517.10.1.1.4.")
-            and entry.filename.endswith(".3.1.dcm")
-        ],
-    ),
-    ClassifyingRule(
-        "Triton_Macula_6*6_OCTA_volumeanalysis_for_presentation",
-        conditions=[
-            lambda entry: entry.device == "Triton plus"
-            and str(entry.slicethickness) == "0.01875"
-            and "fo-dicom 4.0.8" == entry.implementationversion
-            and entry.filename.startswith("2.16.840.1.114517.10.1.1.4.")
-            and entry.filename.endswith(".5.1.dcm")
-        ],
-    ),
-    ClassifyingRule(
-        "Triton_Macula_6*6_OCTA_enface_superficial",
-        conditions=[
-            lambda entry: entry.device == "Triton plus"
-            and "fo-dicom 4.0.8" == entry.implementationversion
-            and entry.filename.startswith("2.16.840.1.114517.10.1.1.4.")
-            and entry.filename.endswith(".6.3.dcm")
-        ],
-    ),
-    ClassifyingRule(
-        "Triton_Macula_6*6_OCTA_enface_deep",
-        conditions=[
-            lambda entry: entry.device == "Triton plus"
-            and "fo-dicom 4.0.8" == entry.implementationversion
-            and entry.filename.startswith("2.16.840.1.114517.10.1.1.4.")
-            and entry.filename.endswith(".6.4.dcm")
-        ],
-    ),
-    ClassifyingRule(
-        "Triton_Macula_6*6_OCTA_enface_choriocapillaris",
-        conditions=[
-            lambda entry: entry.device == "Triton plus"
-            and "fo-dicom 4.0.8" == entry.implementationversion
-            and entry.filename.startswith("2.16.840.1.114517.10.1.1.4.")
-            and entry.filename.endswith(".6.5.dcm")
-        ],
-    ),
-    ClassifyingRule(
-        "Triton_Macula_6*6_OCTA_enface_outer_retina",
-        conditions=[
-            lambda entry: entry.device == "Triton plus"
-            and "fo-dicom 4.0.8" == entry.implementationversion
-            and entry.filename.startswith("2.16.840.1.114517.10.1.1.4.")
-            and entry.filename.endswith(".6.80.dcm")
-        ],
-    ),
-    ClassifyingRule(
-        "Triton_Macula_12*12_OCTA_reference_Bscan",
-        conditions=[
-            lambda entry: entry.device == "Triton plus"
-            and str(entry.slicethickness) == "0.0234375"
-            and "fo-dicom 4.0.8" == entry.implementationversion
-            and entry.filename.startswith("2.16.840.1.114517.10.1.1.4.")
             and entry.filename.endswith(".1.1.dcm")
         ],
     ),
-    ClassifyingRule(
-        "Triton_Macula_12*12_OCTA_reference_CFP",
-        conditions=[
-            lambda entry: entry.device == "Triton plus"
-            and "fo-dicom 4.0.8" == entry.implementationversion
-            and entry.filename.startswith("2.16.840.1.114517.10.1.1.4.")
-            and entry.filename.endswith(".2.1.dcm")
-        ],
-    ),
-    ClassifyingRule(
-        "Triton_Macula_12*12_OCTA_Segmentation",
-        conditions=[
-            lambda entry: entry.device == "Triton plus"
-            and "fo-dicom 4.0.8" == entry.implementationversion
-            and entry.filename.startswith("2.16.840.1.114517.10.1.1.4.")
-            and entry.filename.endswith(".4.1.dcm")
-        ],
-    ),
-    ClassifyingRule(
-        "Triton_Macula_12*12_OCTA_volumeanalysis_unprocessed",
-        conditions=[
-            lambda entry: entry.device == "Triton plus"
-            and str(entry.slicethickness) == "0.0234375"
-            and "fo-dicom 4.0.8" == entry.implementationversion
-            and entry.filename.startswith("2.16.840.1.114517.10.1.1.4.")
-            and entry.filename.endswith(".3.1.dcm")
-        ],
-    ),
-    ClassifyingRule(
-        "Triton_Macula_12*12_OCTA_volumeanalysis_for_presentation",
-        conditions=[
-            lambda entry: entry.device == "Triton plus"
-            and str(entry.slicethickness) == "0.0234375"
-            and "fo-dicom 4.0.8" == entry.implementationversion
-            and entry.filename.startswith("2.16.840.1.114517.10.1.1.4.")
-            and entry.filename.endswith(".5.1.dcm")
-        ],
-    ),
-    ClassifyingRule(
-        "Triton_Macula_12*12_OCTA_enface_superficial",
-        conditions=[
-            lambda entry: entry.device == "Triton plus"
-            and "fo-dicom 4.0.8" == entry.implementationversion
-            and entry.filename.startswith("2.16.840.1.114517.10.1.1.4.")
-            and entry.filename.endswith(".6.3.dcm")
-        ],
-    ),
-    ClassifyingRule(
-        "Triton_Macula_12*12_OCTA_enface_deep",
-        conditions=[
-            lambda entry: entry.device == "Triton plus"
-            and "fo-dicom 4.0.8" == entry.implementationversion
-            and entry.filename.startswith("2.16.840.1.114517.10.1.1.4.")
-            and entry.filename.endswith(".6.4.dcm")
-        ],
-    ),
-    ClassifyingRule(
-        "Triton_Macula_12*12_OCTA_enface_choriocapillaris",
-        conditions=[
-            lambda entry: entry.device == "Triton plus"
-            and "fo-dicom 4.0.8" == entry.implementationversion
-            and entry.filename.startswith("2.16.840.1.114517.10.1.1.4.")
-            and entry.filename.endswith(".6.5.dcm")
-        ],
-    ),
-    ClassifyingRule(
-        "Triton_Macula_12*12_OCTA_enface_outer_retina",
-        conditions=[
-            lambda entry: entry.device == "Triton plus"
-            and "fo-dicom 4.0.8" == entry.implementationversion
-            and entry.filename.startswith("2.16.840.1.114517.10.1.1.4.")
-            and entry.filename.endswith(".6.80.dcm")
-        ],
-    ),
+    
     # #spectralis
     ClassifyingRule(
         "Spec_ONH_RC_HR_OCT",
         conditions=[
             lambda entry: entry.device == "Spectralis"
-            and str(entry.framenumber) == "27"
+            
+            and (not isinstance(entry.framenumber, str)) and (26 <= int(entry.framenumber) <= 28)
+          
             and str(entry.rows) == "496"
             and str(entry.columns) == "768"
             and entry.slicethickness == ""
@@ -382,10 +153,10 @@ rules = [
         "Spec_PPole_Mac_HR_OCT",
         conditions=[
             lambda entry: entry.device == "Spectralis"
-            and str(entry.framenumber) == "61"
+            and (not isinstance(entry.framenumber, str)) and (60 <= int(entry.framenumber) <= 62)
             and str(entry.rows) == "496"
             and str(entry.columns) == "768"
-            and entry.slicethickness != ""
+        
         ],
     ),
     ClassifyingRule(
@@ -395,26 +166,28 @@ rules = [
             and str(entry.rows) == "768"
             and str(entry.columns) == "768"
             and str(entry.privatetag) == "N/A"
+            and str(entry.gaze) == "R-1022D"
         ],
     ),
-    ClassifyingRule(
-        "Spec-Mac-20x20-HS_OCTA_reference_Bscan",
-        conditions=[
-            lambda entry: entry.device == "Spectralis"
-            and str(entry.framenumber) == "512"
-            and str(entry.rows) == "496"
-            and str(entry.columns) == "512"
-        ],
-    ),
-    ClassifyingRule(
-        "Spec-Mac-20x20-HS_OCTA_reference_IR",
-        conditions=[
-            lambda entry: entry.device == "Spectralis"
-            and str(entry.rows) == "768"
-            and str(entry.columns) == "768"
-            and str(entry.privatetag) == "Super Slim"
-        ],
-    ),
+     ClassifyingRule(
+         "Spec-Mac-20x20-HS_OCTA_reference_Bscan",
+         conditions=[
+             lambda entry: entry.device == "Spectralis"
+             and (not isinstance(entry.framenumber, str)) and (511 <= int(entry.framenumber) <= 513)
+            
+             and str(entry.rows) == "496"
+             and str(entry.columns) == "512"
+         ],
+     ),
+     ClassifyingRule(
+         "Spec-Mac-20x20-HS_OCTA_reference_IR",
+         conditions=[
+             lambda entry: entry.device == "Spectralis"
+             and str(entry.rows) == "768"
+             and str(entry.columns) == "768"
+             and str(entry.privatetag) == "Super Slim"
+         ],
+     )
     # OCTA
     # FLIO
 ]
@@ -435,7 +208,10 @@ class DicomEntry:
         referencedsopinstance,
         slicethickness,
         implementationversion,
+        gaze,
         privatetag,
+        softwareversion,
+        numberoffiles
     ):
         self.filename = filename
         self.patientid = patientid
@@ -450,19 +226,23 @@ class DicomEntry:
         self.referencedsopinstance = referencedsopinstance
         self.slicethickness = slicethickness
         self.implementationversion = implementationversion
+        self.gaze = gaze
         self.privatetag = privatetag
+        self.softwareversion = softwareversion
+        self.numberoffiles = numberoffiles
 
 
 class DicomSummary:
     def __init__(
-        self, domain, modality, device, patientid, laterality, description
+        self, domain, modality, patientid, laterality, protocol
     ):  # sopinstance, matchingcfpifsopinstance
         self.domain = domain  # DICOM
         self.modality = modality  # CFP, IR, OCT B scan, ...
-        self.device = device  # Device name
         self.patientid = patientid  # patient id
         self.laterality = laterality  # laterality
-        self.description = description  # belongs to which one in AIREADI checklist
+        self.protocol = protocol  # belongs to which one in AIREADI checklist
+
+
 
 
 def extract_dicom_entry(file):
@@ -477,18 +257,32 @@ def extract_dicom_entry(file):
     sopclassuid = dicom["00080016"]["Value"][0]
     sopinstanceuid = dicom["00080018"]["Value"][0]
 
+    folder_path = os.path.dirname(file)
+    folder_files = os.listdir(folder_path)
+    filecount = len([f for f in folder_files if os.path.isfile(os.path.join(folder_path, f))])
+
     if sopclassuid == "1.2.840.10008.5.1.4.1.1.77.1.5.1":
         rows = dicom["00280010"]["Value"][0]
         columns = dicom["00280011"]["Value"][0]
         laterality = dicom["00200062"]["Value"][0]
         implementationversion = ds.file_meta.ImplementationVersionName
         device = dicom["00081090"]["Value"][0]
+        softwareversion = dicom["00181020"]["Value"][0]
+        numberoffiles = filecount
         # Check if privatetag value exists
         if "00511017" in dicom:
             privatetag = dicom["00511017"]["Value"][0]
         else:
             privatetag = "N/A"
-        framenumber = referencedsopinstance = slicethickness = "N/A"
+            
+        if (
+            "00220006" in dicom
+            and "00080100" in dicom["00220006"]["Value"][0]):
+            gaze = dicom["00220006"]["Value"][0]["00080100"]["Value"][0]
+        else:
+            gaze = "N/A"
+            
+        framenumber = referencedsopinstance = slicethickness =  "N/A"
 
     elif sopclassuid == "1.2.840.10008.5.1.4.1.1.77.1.5.4":
         rows = dicom["00280010"]["Value"][0]
@@ -497,6 +291,8 @@ def extract_dicom_entry(file):
         implementationversion = ds.file_meta.ImplementationVersionName
         device = dicom["00081090"]["Value"][0]
         framenumber = dicom["00280008"]["Value"][0]
+        softwareversion = dicom["00181020"]["Value"][0]
+        numberoffiles = filecount
         referencedsopinstance = dicom["52009229"]["Value"][0]["00081140"]["Value"][0][
             "00081155"
         ]["Value"][0]
@@ -510,7 +306,8 @@ def extract_dicom_entry(file):
             ]["Value"][0]
         else:
             slicethickness = ""
-        privatetag = "N/A"
+            
+        privatetag = gaze ="N/A"
 
     elif (
         sopclassuid == "1.2.840.10008.5.1.4.1.1.77.1.5.8"
@@ -527,7 +324,8 @@ def extract_dicom_entry(file):
             "00180050"
         ]["Value"][0]
         referencedsopinstance = dicom["00200052"]["Value"][0]
-        privatetag = "N/A"
+        privatetag = softwareversion = gaze="N/A"
+        numberoffiles = filecount
 
     elif sopclassuid == "1.2.840.10008.5.1.4.1.1.66.5":
         laterality = dicom["00200062"]["Value"][0]
@@ -536,7 +334,8 @@ def extract_dicom_entry(file):
             "00081155"
         ]["Value"][0]
         implementationversion = ds.file_meta.ImplementationVersionName
-        rows = columns = framenumber = slicethickness = privatetag = "N/A"
+        numberoffiles = filecount
+        rows = columns = framenumber = slicethickness = privatetag = gaze = softwareversion ="N/A"
 
     elif sopclassuid == "1.2.840.10008.5.1.4.1.1.77.1.5.7":  # en face
         laterality = dicom["00200062"]["Value"][0]
@@ -544,8 +343,9 @@ def extract_dicom_entry(file):
         columns = dicom["00280011"]["Value"][0]
         implementationversion = ds.file_meta.ImplementationVersionName
         device = dicom["00081090"]["Value"][0]
+        numberoffiles = filecount
         referencedsopinstance = dicom["00082112"]["Value"][0]["00081155"]["Value"][0]
-        framenumber = slicethickness = privatetag = "N/A"
+        framenumber = slicethickness = privatetag = gaze = softwareversion ="N/A"
 
     else:  # unknown
         sopinstanceuid = f"Unknown SOP Class UID: {sopclassuid}"
@@ -557,7 +357,7 @@ def extract_dicom_entry(file):
             referencedsopinstance
         ) = (
             implementationversion
-        ) = columns = framenumber = slicethickness = privatetag = "N/A"
+        ) = columns = framenumber = slicethickness = privatetag = gaze= numberoffiles =softwareversion = "N/A"
 
     output = DicomEntry(
         filename,
@@ -572,7 +372,10 @@ def extract_dicom_entry(file):
         referencedsopinstance,
         slicethickness,
         implementationversion,
+        gaze,
         privatetag,
+        softwareversion,
+        numberoffiles
     )
     return output
 
@@ -586,7 +389,7 @@ def find_rule(file):
     else:
         return "No rules apply."
 
-
+## Domain, Modality, Protocol, Patient ID, Laterlity, sopinstanceuid, referencedsopinstance
 def extract_dicom_summary(file):
     dicomentry = extract_dicom_entry(file)
     sopclassuid = dicomentry.sopclassuid
@@ -599,7 +402,7 @@ def extract_dicom_summary(file):
         domain = "NOT DICOM"
 
     if sopclassuid == "1.2.840.10008.5.1.4.1.1.77.1.5.1":
-        modality = "CFP/IR"
+        modality = "CFP/IR/FAF"
     elif sopclassuid == "1.2.840.10008.5.1.4.1.1.77.1.5.4":
         modality = "OCT B Scan"
     elif sopclassuid == "1.2.840.10008.5.1.4.1.1.77.1.5.8":
@@ -608,22 +411,26 @@ def extract_dicom_summary(file):
         modality = "Surface Segmentation Storage"
     elif sopclassuid == "1.2.840.10008.5.1.4.1.1.77.1.5.7":
         modality = "En Face OCTA Image"
+    else :
+        modality = sopclassuid 
 
+    sopinstanceuid = dicomentry.sopinstanceuid
     device = dicomentry.device
     patientid = dicomentry.patientid
     laterality = dicomentry.laterality
     referencedsopinstance = dicomentry.referencedsopinstance
-    description = find_rule(file)
+    softwareversion = dicomentry.softwareversion
+    numberoffiles = dicomentry.numberoffiles
+    protocol = find_rule(file)
 
-    output = DicomSummary(domain, modality, device, patientid, laterality, description)
+    output = DicomSummary(domain, modality,patientid, laterality, protocol)
+    #output = DicomSummaryDetail(domain, modality, patientid, laterality, description,sopinstanceuid,referencedsopinstance)
     return output
-
 
 def get_dicom_summary(file):
     dicomsummary = extract_dicom_summary(file)
     obj_dict = vars(dicomsummary)
     return obj_dict
-
 
 def is_dicom_file(file_path):
     try:
@@ -631,3 +438,54 @@ def is_dicom_file(file_path):
         return True
     except pydicom.errors.InvalidDicomError:
         return False
+
+def list_files_recursive(directory):
+    all_files = []
+    for root, _, files in os.walk(directory):
+        for file_name in files:
+            file_path = os.path.join(root, file_name)
+            all_files.append(file_path)
+    return all_files
+
+def process_dicom_zip(zip_file_path):
+    try:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            with zipfile.ZipFile(zip_file_path, "r") as zip_ref:
+                zip_ref.extractall(temp_dir)
+            extracted_files = list_files_recursive(temp_dir)
+
+            dicom_files = [f for f in extracted_files if f.endswith(".dcm") and "/__" not in f]
+
+            if len(dicom_files) == 1:
+                dicom_file_path = os.path.join(temp_dir, dicom_files[0])
+                dicom = get_dicom_summary(dicom_file_path)
+                return dicom
+
+            elif len(dicom_files) > 1:
+                for dicom_file in dicom_files:
+                    if dicom_file.endswith(".1.1.dcm") and "/." not in dicom_file:
+                        dicom_file_path = os.path.join(temp_dir, dicom_file)
+                        dicom = get_dicom_summary(dicom_file_path)
+                        return dicom
+            else:
+                print("Error: no DICOM file present in the zip archive.")
+
+    except Exception as e:
+        print(f"An error occurred: {str(e)}")
+    finally:
+        shutil.rmtree(temp_dir, ignore_errors=True)
+    return None
+
+def extract_env_info(file_path):
+    path_parts = file_path.split('/')
+    filename = path_parts[-1]
+    filename_parts = filename.split('-')
+    patient_id = filename_parts[-2]  
+    sensor_id = filename_parts[-1].split('.')[0] 
+    info_dict = {
+        "patient_id": patient_id,
+        "protocol": "environmental sensor",
+        "sensor_id": sensor_id
+    }
+
+    return info_dict

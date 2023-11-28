@@ -1,13 +1,28 @@
-from image_classifying_rules import get_dicom_summary, is_dicom_file
+from image_classifying_rules import (
+    process_dicom_zip,
+    extract_env_info,
+)
 
+def data_identifier(zip_file_path):
+    if not zip_file_path.endswith(".zip"):
+        return "Not a zip file"
 
-def data_identifier(file):
-    if file.endswith(".zip"):
-        return "Environmental Sensor File"
-    elif file.endswith(".xml"):
-        return "ECG File"
-    elif is_dicom_file(file):
-        dicom = get_dicom_summary(file)
-        return dicom
+    elif "ENV" in zip_file_path:
+        return extract_env_info(zip_file_path)
+
+    elif any(
+        word in zip_file_path
+        for word in [
+            "Optomed",
+            "Eidon",
+            "Maestro",
+            "Triton",
+            "FLIO",
+            "Cirrus",
+            "Spectralis",
+        ]
+    ):
+        return process_dicom_zip(zip_file_path)
+
     else:
-        return "Unknown File Type"
+        return "Unknown file type"
