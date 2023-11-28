@@ -479,11 +479,13 @@ def extract_env_info(file_path):
     path_parts = file_path.split('/')
     filename = path_parts[-1]
     filename_parts = filename.split('-')
-    patient_id = filename_parts[-2]  
+    patient_id = "AIREADI-" + filename_parts[-2]  
     sensor_id = filename_parts[-1].split('.')[0] 
     info_dict = {
-        "patient_id": patient_id,
-        "protocol": "environmental sensor",
+        "domain" : "CSV",
+        "patient_id" : patient_id,
+        "laterality":"N/A", 
+        "protocol": "environmental_sensor",
         "sensor_id": sensor_id
     }
 
